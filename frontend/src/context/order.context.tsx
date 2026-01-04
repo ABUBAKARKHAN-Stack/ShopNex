@@ -9,23 +9,22 @@ import {
 } from "react";
 import {
   getAllOrders as getAllOrdersApi,
-  cancelOrder as cancelOrderApi,
-  downloadOrderInvoice as downloadOrderInvoiceApi,
 } from "@/API/userApi";
 import { AxiosError } from "axios";
 import {
   ApiErrorType,
+  CompleteCheckoutBody,
+  CompleteCheckoutReturnBody,
   IOrder,
   OrderedProduct,
   OrderLoadingStates,
 } from "@/types/main.types";
-import { errorToast, successToast } from "@/utils/toastNotifications";
 import { useOrderQuery } from "@/hooks/useOrderQuery";
-import { UseQueryResult } from "@tanstack/react-query";
 
 type OrderContextType = {
   orderLoading: OrderLoadingStates;
   proceedToCheckout: (navigate: (path: string) => void) => void;
+  completeCheckout: (checkoutBody: CompleteCheckoutBody) => Promise<CompleteCheckoutReturnBody | null>
   userTrackOrder: (orderId: string, navigate: (path: string) => void) => void;
   getAllOrders: (params?: any) => Promise<any>;
   ordersData: IOrder[];
@@ -33,12 +32,12 @@ type OrderContextType = {
   pendingOrders: any[];
   cancelledOrders: any[];
   confirmedOrders: any[];
-  cancelOrder: (orderId: string) => Promise<void>;
+  cancelOrder: (orderId: string) => void;
   ordersCount: number;
   downloadOrderInvoice: (
     orderId: string,
     products: OrderedProduct[],
-  ) => Promise<void>;
+  ) => void;
 };
 
 const OrderContext = createContext<OrderContextType | null>(null);
@@ -53,13 +52,28 @@ const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [ordersData, setOrdersData] = useState<IOrder[]>([]);
   const [ordersCount, setOrdersCount] = useState(0);
 
-  const { useProceedToCheckout, useUserTrackOrder } = useOrderQuery();
+  const {
+    useProceedToCheckout,
+    useCompleteCheckout,
+    useUserTrackOrder,
+    useCancelOrder,
+    useDownLoadOrderInvoice
+  } = useOrderQuery();
   const proceedToCheckoutMutation = useProceedToCheckout(setOrderLoading);
+  const completeCheckoutMutation = useCompleteCheckout(setOrderLoading);
   const userTrackOrderMutation = useUserTrackOrder(setOrderLoading);
+  const cancelOrderMutation = useCancelOrder(setOrderLoading);
+  const downloadOrderInvoiceMutation = useDownLoadOrderInvoice(setOrderLoading);
 
   const proceedToCheckout = (navigate: (path: string) => void) => {
     proceedToCheckoutMutation.mutate(navigate);
   };
+
+  const completeCheckout = async (checkoutBody: CompleteCheckoutBody) => {
+    const res = await completeCheckoutMutation.mutateAsync(checkoutBody);
+    return res
+  };
+
 
   const userTrackOrder = (
     orderId: string,
@@ -78,7 +92,8 @@ const OrderProvider = ({ children }: { children: ReactNode }) => {
 
       if (res.status === 200) {
         const orders = res.data.data.orders;
-        const ordersCount = res.data.data.ordersCount;
+        const ordersCount = res.data.data.orders.length;
+
         setOrdersCount(ordersCount);
         const confirmedOrders = orders.filter(
           (o: any) => o.status === "confirmed",
@@ -106,48 +121,18 @@ const OrderProvider = ({ children }: { children: ReactNode }) => {
     getAllOrders();
   }, []);
 
-  const cancelOrder = async (orderId: string) => {
-    setOrderLoading(OrderLoadingStates.CANCEL_ORDER);
-    try {
-      const res = await cancelOrderApi(orderId);
-      if (res.status === 200) {
-        successToast(res.data.message);
-      }
-    } catch (error) {
-      const err = error as AxiosError<ApiErrorType>;
-      const errMsg = err.response?.data.message || "Something went wrong";
-      errorToast(errMsg);
-    } finally {
-      setOrderLoading(OrderLoadingStates.IDLE);
-    }
+  const cancelOrder = (orderId: string) => {
+    cancelOrderMutation.mutate(orderId)
   };
 
-  const downloadOrderInvoice = async (
+  const downloadOrderInvoice = (
     orderId: string,
     products: OrderedProduct[],
   ) => {
-    setOrderLoading(OrderLoadingStates.DOWNLOAD_INVOICE);
-    try {
-      const res = await downloadOrderInvoiceApi(orderId, products);
-      if (res.status === 200) {
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `invoice-${orderId}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-
-        link.parentNode?.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        successToast("Invoice downloaded!");
-      }
-    } catch (error) {
-      const err = error as AxiosError<ApiErrorType>;
-      const errMsg = err.response?.data.message || "Something went wrong";
-      errorToast(errMsg);
-    } finally {
-      setOrderLoading(OrderLoadingStates.IDLE);
-    }
+    downloadOrderInvoiceMutation.mutate({
+      orderId,
+      products
+    })
   };
 
   return (
@@ -155,6 +140,7 @@ const OrderProvider = ({ children }: { children: ReactNode }) => {
       value={{
         orderLoading,
         proceedToCheckout,
+        completeCheckout,
         userTrackOrder,
         getAllOrders,
         pendingOrders,

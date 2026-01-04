@@ -6,4 +6,5 @@ export const env = {
   PRODUCT_SERVICE_URL: process.env.PRODUCT_SERVICE_URL || 'http://localhost:3003',
   ORDER_SERVICE_URL: process.env.ORDER_SERVICE_URL || 'http://localhost:3004',
   ACTIVITY_SERVICE_URL: process.env.ACTIVITY_SERVICE_URL || 'http://localhost:3005',
+  FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
 }

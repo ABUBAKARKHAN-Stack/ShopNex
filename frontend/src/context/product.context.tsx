@@ -8,29 +8,23 @@ import {
 } from "react";
 
 import {
-  proceedToCheckout as proceedToCheckoutApi,
-  completeCheckout as completeCheckoutApi,
-} from "@/API/userApi";
-import {
   ApiErrorType,
-  CompleteCheckoutBody,
   IProduct,
-  UserProductsLoadingStates,
 } from "@/types/main.types";
+
 import { AxiosError } from "axios";
-import { errorToast } from "@/utils/toastNotifications";
 import { useUserProductsQuery } from "@/hooks/useUserProductsQuery";
 import { UseQueryResult } from "@tanstack/react-query";
 
 type ProductContextType = {
   useAllProducts: (query?: any) => UseQueryResult<
     | {
-        products: IProduct[];
-        totalProducts: number;
-        totalPages: number;
-        limit: number;
-        page: number;
-      }
+      products: IProduct[];
+      totalProducts: number;
+      totalPages: number;
+      limit: number;
+      page: number;
+    }
     | undefined,
     AxiosError<ApiErrorType>
   >;
@@ -54,10 +48,6 @@ type ProductContextType = {
     productIds: string[];
     isIdsLoaded: boolean;
   }) => UseQueryResult<IProduct[] | null, Error>;
-
-  completeCheckout: (
-    checkoutBody: CompleteCheckoutBody,
-  ) => Promise<{ clientSecret: string; orderId: string }>;
 };
 
 const ProductContext = createContext<ProductContextType | null>(null);
@@ -74,18 +64,6 @@ const ProductProvider = ({ children }: { children: ReactNode }) => {
     useBulkProducts,
   } = useUserProductsQuery(); //* Custom Hook For Managing Products Queries/Mutations
 
-  //* Order Related Functions
-
-  const completeCheckout = async (checkoutBody: CompleteCheckoutBody) => {
-    try {
-      const res = await completeCheckoutApi(checkoutBody);
-      if (res.status === 200) return res.data.data;
-    } catch (error) {
-      const err = error as AxiosError<ApiErrorType>;
-      const errMsg = err.response?.data.message || "Something went wrong";
-      errorToast(errMsg);
-    }
-  };
 
   return (
     <ProductContext.Provider
@@ -98,8 +76,6 @@ const ProductProvider = ({ children }: { children: ReactNode }) => {
         useTopCategories,
         useTopProducts,
         useBulkProducts,
-
-        completeCheckout,
       }}
     >
       {children}

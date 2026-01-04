@@ -18,12 +18,15 @@ import { useState } from "react";
 import CountUp from "react-countup";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useWishlistContext } from "@/context/wishlist.context";
+import { useCartContext } from "@/context/cart.context";
 gsap.registerPlugin(ScrollTrigger);
 
 const Metrics = () => {
   const { pendingOrders, confirmedOrders, cancelledOrders, ordersCount } =
     useOrderContext();
-  const { cartProductsCount, wishlist } = useProductContext();
+  const { wishlist } = useWishlistContext();
+  const { cartProductsCount } = useCartContext()
   const [countUpStarted, setCountUpStarted] = useState(false);
 
   const metrics = [

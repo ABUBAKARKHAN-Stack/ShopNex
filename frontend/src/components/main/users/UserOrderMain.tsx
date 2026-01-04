@@ -18,6 +18,7 @@ import { isOrderCancelable } from "@/utils/IsOrderCancelable";
 import { OrderLoadingStates, OrderStatus } from "@/types/main.types";
 import { useOrderContext } from "@/context/order.context";
 import { DeliveryInfo } from "@/components/reusable/user";
+import { ButtonLoader } from "@/components/Skeleton&Loaders/loaders";
 
 const UserOrderMain = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,15 +42,19 @@ const UserOrderMain = () => {
   } = useLoaderData();
 
   const isCancelable = isOrderCancelable(orderStatus, confirmedAt);
-  const { cancelOrder, orderLoading, downloadOrderInvoice } = useOrderContext();
+  const {
+    cancelOrder,
+    orderLoading,
+    downloadOrderInvoice
+  } = useOrderContext();
   const { revalidate } = useRevalidator();
   const navigate = useNavigate();
   const downloadOrderInvoiceLoading =
     orderLoading === OrderLoadingStates.DOWNLOAD_INVOICE;
   const orderCancelLoading = orderLoading === OrderLoadingStates.CANCEL_ORDER;
 
-  const handleOrderCanel = async () => {
-    await cancelOrder(orderId);
+  const handleOrderCanel = () => {
+    cancelOrder(orderId);
     revalidate();
   };
 
@@ -156,10 +161,9 @@ const UserOrderMain = () => {
                 variant="outline"
               >
                 {downloadOrderInvoiceLoading ? (
-                  <>
-                    <LoaderPinwheel className="size-4 animate-spin" />
-                    Downloaing...
-                  </>
+                  <ButtonLoader
+                    loaderText="Downloaing Invoice..."
+                  />
                 ) : (
                   <>
                     <FileDown className="size-4.5" />
@@ -174,10 +178,9 @@ const UserOrderMain = () => {
                 onClick={handleOrderCanel}
               >
                 {orderCancelLoading ? (
-                  <>
-                    <LoaderPinwheel className="size-4 animate-spin" />
-                    Cancelling...
-                  </>
+                  <ButtonLoader
+                    loaderText="Cancelling Order..."
+                  />
                 ) : (
                   <>
                     <Ban className="size-4.5" />

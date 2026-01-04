@@ -29,7 +29,6 @@ const authCheck = asyncHandler(async (req: Request, res: Response, next: NextFun
     //* Store user in response locals
     res.locals.user = user;
     next();
-
 })
 
 export default authCheck;

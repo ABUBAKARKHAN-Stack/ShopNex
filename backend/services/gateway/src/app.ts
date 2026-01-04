@@ -12,7 +12,7 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: env.FRONTEND_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 }));
@@ -28,7 +28,7 @@ app.use('/product', (req, res, next) => {
     proxy(env.PRODUCT_SERVICE_URL, {
         limit: '50mb',
         parseReqBody: !isFileUpload,
-    })(req, res, next); 
+    })(req, res, next);
 });
 app.use('/order', proxy(env.ORDER_SERVICE_URL));
 app.use('/activity', proxy(env.ACTIVITY_SERVICE_URL))

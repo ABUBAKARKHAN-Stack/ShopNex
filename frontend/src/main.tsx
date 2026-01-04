@@ -341,7 +341,7 @@ createRoot(document.getElementById("root")!).render(
   // <StrictMode>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ReactQueryDevtools initialIsOpen={true} />
+      {/* <ReactQueryDevtools initialIsOpen={true} /> */}
       <AuthProvider>
         <ProductProvider>
           <WishlistProvider>

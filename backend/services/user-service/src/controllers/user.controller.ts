@@ -10,6 +10,7 @@ import expressAsyncHandler from 'express-async-handler'
 
 //* Controller functions for user service
 
+
 //? Create a new user
 const createUser = asyncHandler(async (req: Request, res: Response) => {
     const { username, email, password, phone }: CreateUser = req.body
@@ -267,7 +268,6 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
     res
         .status(200)
         .json(new ApiResponse(200, "User fetched successfully", user))
-
 })
 
 //? Update a user

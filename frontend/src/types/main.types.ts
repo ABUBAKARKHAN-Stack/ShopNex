@@ -297,3 +297,9 @@ export enum OrderLoadingStates {
   DOWNLOAD_INVOICE = "download-invoice",
   COMPLETE_CHECKOUT = "complete_checkout",
 }
+
+
+export type CompleteCheckoutReturnBody = {
+  clientSecret: string;
+  orderId:string
+}

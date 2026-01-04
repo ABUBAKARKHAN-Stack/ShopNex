@@ -36,8 +36,11 @@ const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const { data: cart } = useCartDetails();
 
+  console.log(cart,"CART");
+  
+
   useEffect(() => {
-    if (cart) {
+    if (cart) {      
       setCartProductsCount(cart.products.length);
       setCartDetails(cart);
     }

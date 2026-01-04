@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { IShippingAddress, PaymentMethod } from "@/types/main.types";
+import { IShippingAddress, PaymentMethod, QueryKeys } from "@/types/main.types";
 import { CreditCard, LoaderPinwheel } from "lucide-react";
 import { FC, FormEvent, useEffect, useRef, useState } from "react";
 import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
@@ -13,6 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { z } from "zod";
 import { shippingAddressSchema } from "@/schemas/checkoutSchema";
 import { useTheme } from "next-themes";
+import { useCartContext } from "@/context/cart.context";
+import { queryClient } from "@/utils/tanstackQueryClient";
+import { useOrderContext } from "@/context/order.context";
+import { ButtonLoader } from "@/components/Skeleton&Loaders/loaders";
 
 type Props = {
   totalAmount: number;
@@ -33,7 +37,9 @@ const CheckoutForm: FC<Props> = ({
   const stripe = useStripe();
   const elements = useElements();
   const { resolvedTheme } = useTheme();
-  const { completeCheckout, setCartProductsCount } = useProductContext();
+  const {
+    completeCheckout,
+  } = useOrderContext();
   const navigate = useNavigate();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
@@ -52,12 +58,19 @@ const CheckoutForm: FC<Props> = ({
     const card = elements.getElement(CardElement);
     setPaymentLoading(true);
     try {
-      const { clientSecret, orderId } = await completeCheckout({
+      const checkoutResponse = await completeCheckout({
         paymentMethod,
         shippingAddress: shippingAddress as IShippingAddress,
         totalAmountInUSD: totalAmount,
         shippingMethod,
       });
+
+      if (!checkoutResponse) return;
+      const {
+        clientSecret,
+        orderId
+      } = checkoutResponse
+
 
       const { paymentIntent, error } = await stripe.confirmCardPayment(
         clientSecret,
@@ -71,7 +84,7 @@ const CheckoutForm: FC<Props> = ({
         errorToast(error.message || "Something went wrong");
       } else if (paymentIntent.status === "succeeded") {
         successToast("Payment Successful!");
-        setCartProductsCount(0);
+        queryClient.setQueryData([QueryKeys.GET_CART], () => ({ totalAmount: 0, products: [] }));
         timeoutRef.current = setTimeout(() => {
           navigate(`/checkout/success?orderId=${orderId}`);
         }, 1000);
@@ -81,21 +94,30 @@ const CheckoutForm: FC<Props> = ({
       throw new ApiError(500, err.message);
     } finally {
       setPaymentLoading(false);
+
     }
   };
 
   const handleCod = async () => {
-    const { orderId } = await completeCheckout({
-      paymentMethod,
-      shippingAddress: shippingAddress as IShippingAddress,
-      totalAmountInUSD: totalAmount,
-      shippingMethod,
-    });
-    successToast("Order Placed Successfully");
-    setCartProductsCount(0);
-    timeoutRef.current = setTimeout(() => {
-      navigate(`/checkout/success?orderId=${orderId}`);
-    }, 1000);
+    setPaymentLoading(true)
+    try {
+      const checkoutResponse = await completeCheckout({
+        paymentMethod,
+        shippingAddress: shippingAddress as IShippingAddress,
+        totalAmountInUSD: totalAmount,
+        shippingMethod,
+      });
+      if (!checkoutResponse) return;
+      successToast("Order Placed Successfully");
+      queryClient.invalidateQueries({ queryKey: [QueryKeys.GET_CART] })
+      timeoutRef.current = setTimeout(() => {
+        navigate(`/checkout/success?orderId=${checkoutResponse.orderId}`);
+      }, 100);
+    } catch (error) {
+      console.log("COD ERROR :: ", error);
+    } finally {
+      setPaymentLoading(false)
+    }
   };
 
   useEffect(() => {
@@ -186,8 +208,9 @@ const CheckoutForm: FC<Props> = ({
               >
                 {paymentLoading ? (
                   <>
-                    <span>Processing Payment</span>
-                    <LoaderPinwheel className="size-5 animate-spin" />
+                    <ButtonLoader
+                      loaderText="Processing Payment..."
+                    />
                   </>
                 ) : (
                   "Complete Order"
@@ -197,8 +220,16 @@ const CheckoutForm: FC<Props> = ({
           </div>
         ) : paymentMethod === PaymentMethod.COD ? (
           <div className="p-6">
-            <Button onClick={handleCod} size={"lg"}>
-              Complete Order Via Payment Method COD
+            <Button
+              onClick={handleCod}
+              size={"lg"}
+              disabled={paymentLoading}
+            >
+              {
+                paymentLoading ? <ButtonLoader
+                  loaderText="Processing Order..."
+                /> : "Complete Order Via Payment Method COD"
+              }
             </Button>
           </div>
         ) : null}

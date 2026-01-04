@@ -42,6 +42,7 @@ const RenderFooterLinks = ({
 
 const FooterTop = () => {
   const { user } = useAuthContext();
+
   const form = useForm({
     resolver: zodResolver(newsLetterSchema),
     defaultValues: {
